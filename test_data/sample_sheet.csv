@@ -1,0 +1,12 @@
+barcode,sample_id,alias,type
+barcode01,SRR12480552,SRR12480552,test_sample
+barcode02,SRR12447502,SRR12447502,test_sample
+barcode03,SRR12447501,SRR12447501,test_sample
+barcode05,SRR12447499,SRR12447499,test_sample
+barcode06,SRR12447498,SRR12447498,test_sample
+barcode07,SRR12447496,SRR12447496,test_sample
+barcode08,SRR12480536,SRR12480536,test_sample
+barcode09,SRR12480535,SRR12480535,test_sample
+barcode10,SRR12447512,SRR12447512,test_sample
+barcode12,SRR12447503,SRR12447503,test_sample
+barcode99,SRR00000000,SRR00000000,test_sample

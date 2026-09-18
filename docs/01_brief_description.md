@@ -1,0 +1,1 @@
+Run the ARTIC SARS-CoV-2 methodology.
