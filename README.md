@@ -93,14 +93,14 @@ nextflow pull nf-artic
 A demo dataset is provided for testing of the workflow.
 It can be downloaded and unpacked using the following commands:
 ```
-wget https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-artic/wf-artic-demo.tar.gz
-tar -xzvf wf-artic-demo.tar.gz
+wget https://github.com/jiaxunk/nf-artic/releases/download/v1.0.0/nf-artic-demo.tar.gz
+tar -xzvf nf-artic-demo.tar.gz
 ```
 The workflow can then be run with the downloaded demo data using:
 ```
 nextflow run nf-artic \
-	--fastq 'wf-artic-demo/fastq' \
-	--sample_sheet 'wf-artic-demo/sample_sheet.csv' \
+	--fastq 'nf-artic-demo/fastq' \
+	--sample_sheet 'nf-artic-demo/sample_sheet.csv' \
 	--scheme_name 'SARS-CoV-2' \
 	--scheme_version 'Midnight-ONT/V3' \
 	-profile standard

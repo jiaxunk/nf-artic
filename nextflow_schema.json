@@ -1,12 +1,12 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/./master/nextflow_schema.json",
+    "$id": "https://raw.githubusercontent.com/jiaxunk/nf-artic/main/nextflow_schema.json",
     "title": "nf-artic",
     "workflow_title": "Artic Network SARS-CoV-2 Analysis",
     "description": "Run the ARTIC SARS-CoV-2 methodology.",
-    "demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-artic/wf-artic-demo.tar.gz",
-    "aws_demo_url": "https://ont-exd-int-s3-euwst1-epi2me-labs.s3.amazonaws.com/wf-artic/wf-artic-demo/aws.nextflow.config",
-    "url": "https://github.com/epi2me-labs/wf-artic",
+    "demo_url": "https://github.com/jiaxunk/nf-artic/releases/download/v1.0.0/nf-artic-demo.tar.gz",
+    "aws_demo_url": "https://github.com/jiaxunk/nf-artic/releases/download/v1.0.0/nf-artic-demo.tar.gz",
+    "url": "https://github.com/jiaxunk/nf-artic",
     "type": "object",
     "definitions": {
         "input": {
