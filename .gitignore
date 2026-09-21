@@ -15,27 +15,3 @@ venv/
 .pytest_cache/
 .coverage
 htmlcov/
-
-# Local AI assistant, scratch & tracking files
-.scratch/
-scratch/
-.agent/
-.agents/
-.gemini/
-.claude/
-AGENTS.md
-GEMINI.md
-CLAUDE.md
-CONTEXT.md
-.system_generated/
-
-# OS & Editor artifacts
-.DS_Store
-.DS_store
-Thumbs.db
-.*.swp
-.*.swo
-*~
-*.bak
-.idea/
-.vscode/
