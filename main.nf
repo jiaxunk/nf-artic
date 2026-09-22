@@ -286,7 +286,8 @@ process getNextcladeData {
     output:
         path "nextclade_data", emit: data
     script:
-    def tag_opt = (nextclade_data_tag && nextclade_data_tag != 'latest') ? "--tag ${nextclade_data_tag}" : ""
+    def clean_tag = nextclade_data_tag ? nextclade_data_tag.replace('T', '--') : ""
+    def tag_opt = (clean_tag && clean_tag != 'latest') ? "--tag ${clean_tag}" : ""
     """
     nextclade dataset get --name 'sars-cov-2' --output-dir 'nextclade_data' $tag_opt
     """
@@ -631,10 +632,21 @@ workflow {
     nextclade_data_tag = params.nextclade_data_tag
     if (!nextclade_data_tag) {
         tagged_dirs = file(projectDir.resolve("./data/nextclade/datasets/sarscov2/*"), type: 'dir', maxdepth: 1)
-        def tag_list = []
+        def tag_map = [:]
         date_parse = new SimpleDateFormat("yyyy-MM-dd'T'HH-mm-ss'Z'");
-        tagged_dirs.each { val -> tag_list << date_parse.parse(val.getBaseName()) }
-        nextclade_data_tag = Collections.max(tag_list).format("yyyy-MM-dd'T'HH-mm-ss'Z'")
+        tagged_dirs.each { val ->
+            def base = val.getBaseName()
+            try {
+                def parsed = date_parse.parse(base.replace("--", "T"))
+                tag_map[parsed] = base
+            } catch (Exception e) {
+                // Ignore non-date directories
+            }
+        }
+        if (tag_map) {
+            def max_date = Collections.max(tag_map.keySet())
+            nextclade_data_tag = tag_map[max_date]
+        }
     }
     nextclade_dataset = file(projectDir.resolve("./data/nextclade/datasets/sarscov2"), type: 'dir', checkIfExists:true)
 
