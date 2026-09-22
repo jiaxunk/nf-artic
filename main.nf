@@ -8,7 +8,7 @@ nextflow.enable.dsl = 2
 include { fastq_ingress } from './lib/ingress'
 
 process checkSampleSheet {
-    label "artic"
+    label "report"
     cpus 1
     input:
         file "sample_sheet.txt"
@@ -92,7 +92,7 @@ process combineDepth {
 
 process genotypeSummary {
     // Produce a genotype summary spreadsheet
-    label "artic"
+    label "report"
     cpus 1
     input:
         tuple val(alias), file(vcf), file(tbi), file(bam), file(bam_index)
@@ -116,7 +116,7 @@ process genotypeSummary {
 
 
 process combineGenotypeSummaries {
-    label "artic"
+    label "report"
     cpus 1
     input:
         file "summary_*.csv"
@@ -135,7 +135,7 @@ process getVersions {
         path "versions.txt"
     script:
     """
-    medaka --version | sed 's/ /,/' >> versions.txt
+    run_clair3.sh --version | sed 's/ /,/' >> versions.txt
     minimap2 --version | sed 's/^/minimap2,/' >> versions.txt
     bcftools --version | head -n 1 | sed 's/ /,/' >> versions.txt
     samtools --version | head -n 1 | sed 's/ /,/' >> versions.txt
@@ -145,7 +145,7 @@ process getVersions {
 
 
 process getParams {
-    label "artic"
+    label "report"
     cpus 1
     output:
         path "params.json"
@@ -159,7 +159,7 @@ process getParams {
 
 
 process report {
-    label "artic"
+    label "report"
     cpus 1
     input:
         path "depth_stats/*"
@@ -213,7 +213,7 @@ process report {
 
 
 process report_no_data {
-    label "artic"
+    label "report"
     cpus 1
     input:
         path "versions/*"
@@ -253,8 +253,9 @@ process allConsensus {
 
 
 process allVariants {
-    label "artic"
+    label "report"
     cpus 1
+
     input:
         tuple val(alias), file(vcfs), file(tbis)
         file reference
@@ -363,7 +364,7 @@ process pangolin {
 // decoupling the publish from the process steps.
 process output {
     // publish inputs to output directory
-    label "artic"
+    label "report"
 
     publishDir "${params.out_dir}", mode: 'copy', pattern: "*"
     input:

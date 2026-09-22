@@ -16,6 +16,19 @@ import pysam
 
 from .util import get_named_logger, wf_parser  # noqa: ABS101
 
+# Backward-compatibility for pandas >= 2.0 in aplanat bcfstats
+if not hasattr(pd.DataFrame, "append"):
+    def _df_append(self, other, ignore_index=False, verify_integrity=False, sort=False):
+        if isinstance(other, dict):
+            other = pd.DataFrame([other])
+        elif isinstance(other, list):
+            other = pd.DataFrame(other)
+        elif isinstance(other, pd.Series):
+            other = other.to_frame().T
+        return pd.concat([self, other], ignore_index=ignore_index, verify_integrity=verify_integrity, sort=sort)
+    pd.DataFrame.append = _df_append
+
+
 # Define categorical types
 CATEGORICAL = pd_types.CategoricalDtype(ordered=True)
 
@@ -278,7 +291,10 @@ comparing depth across samples.***
     # canned VCF stats report component
     if not args.hide_variants:
         section = report_doc.add_section()
-        bcfstats.full_report(args.bcftools_stats, report=section)
+        try:
+            bcfstats.full_report(args.bcftools_stats, report=section)
+        except Exception as exc:
+            logger.warning(f"Could not generate full bcfstats report: {exc}")
 
     # NextClade analysis
     if args.nextclade is not None:

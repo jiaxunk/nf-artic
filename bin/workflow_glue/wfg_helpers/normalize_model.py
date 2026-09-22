@@ -1,5 +1,5 @@
-"""Workflow glue helper to normalize basecaller model strings to Medaka models."""
-from ..util import normalize_medaka_model, wf_parser
+"""Workflow glue helper to normalize basecaller model strings to Clair3 models."""
+from ..util import normalize_basecaller_model, wf_parser
 
 
 def argparser():
@@ -11,5 +11,5 @@ def argparser():
 
 def main(args):
     """Entry point for CLI."""
-    normalized = normalize_medaka_model(args.model)
+    normalized = normalize_basecaller_model(args.model)
     print(normalized)

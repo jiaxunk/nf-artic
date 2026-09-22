@@ -55,15 +55,14 @@ def _log_level():
     return parser
 
 
-def normalize_medaka_model(model: str) -> str:
-    """Translate Dorado/MinKNOW/Guppy basecaller model strings into canonical Medaka model strings.
+def normalize_basecaller_model(model: str) -> str:
+    """Translate Dorado/MinKNOW/Guppy basecaller model strings into canonical Clair3 model identifiers.
 
     Supports:
-    - Modern Dorado models (e.g. dna_r10.4.1_e8.2_400bps_hac@v5.2.0 -> r1041_e82_400bps_hac_v5.2.0)
-    - Legacy Guppy models (e.g. dna_r9.4.1_450bps_hac -> r941_min_hac_g507)
-    - Direct Medaka model strings (e.g. r1041_e82_400bps_sup_v5.0.0)
+    - Modern Dorado R10.4.1 models (e.g. dna_r10.4.1_e8.2_400bps_sup@v5.0.0 -> r1041_e82_400bps_sup_v500)
+    - Legacy Guppy / R9.4.1 models (e.g. dna_r9.4.1_450bps_hac -> r941_prom_hac_g360+g422)
+    - Direct Clair3 model identifiers (e.g. r1041_e82_400bps_sup_v520)
     - Direct file paths / archive URLs (passed untouched)
-    - Cleanly strips legacy :consensus suffix if present
     """
     import re
 
@@ -76,31 +75,43 @@ def normalize_medaka_model(model: str) -> str:
     if "/" in model or "\\" in model or model.endswith((".tar.gz", ".hdf5", ".pt", ".onnx", ".tar")):
         return model
 
-    # 2. Strip legacy :consensus / :variant suffix
+    # 2. Strip legacy :consensus / :variant suffix if present
     if ":" in model:
         model = model.split(":")[0]
 
-    # 3. If already a canonical Medaka model identifier
-    if re.match(r"^(r1041_|r941_|r103_|r94_)[a-zA-Z0-9_\.]+$", model) and "@" not in model:
+    # 3. Direct canonical Clair3 models
+    if re.match(r"^(r1041_|r941_|r104_|ont_|hifi_|ilmn_)[a-zA-Z0-9_\+\.]+$", model) and "@" not in model:
+        # Check if legacy min / fast string
+        if "min_hac" in model or "min_fast" in model or "min_high" in model:
+            return "r941_prom_hac_g360+g422"
+        elif "min_sup" in model:
+            return "r941_prom_sup_g5014"
         return model
 
     # 4. Check for legacy R9 / Guppy models
     if "r9.4.1" in model or "r941" in model:
-        if "hac" in model:
-            return "r941_min_hac_g507"
-        elif "sup" in model:
-            return "r941_min_sup_g507"
-        elif "fast" in model:
-            return "r941_min_fast_g303"
-        elif "high" in model:
-            return "r941_min_high_g360"
+        if "sup" in model.lower():
+            return "r941_prom_sup_g5014"
+        return "r941_prom_hac_g360+g422"
 
-    # 5. Translate modern Dorado models (e.g., dna_r10.4.1_e8.2_400bps_hac@v5.2.0)
+    # 5. Translate modern Dorado models (e.g. dna_r10.4.1_e8.2_400bps_sup@v5.0.0 -> r1041_e82_400bps_sup_v500)
     res = re.sub(r"^dna_", "", model)
-    res = res.replace("@", "_")
+    # Convert @vX.Y.Z -> _vXYZ (e.g. @v5.0.0 -> _v500, @v5.2.0 -> _v520)
+    m = re.search(r"@v(\d+)\.(\d+)\.(\d+)", res)
+    if m:
+        version_suffix = f"_v{m.group(1)}{m.group(2)}{m.group(3)}"
+        res = re.sub(r"@v\d+\.\d+\.\d+", version_suffix, res)
+    else:
+        res = res.replace("@", "_")
+
     res = re.sub(r"r10\.4\.1", "r1041", res)
     res = re.sub(r"r9\.4\.1", "r941", res)
     res = re.sub(r"e8\.([0-9])", r"e8\1", res)
 
     return res
+
+
+# Backward-compatibility alias
+normalize_medaka_model = normalize_basecaller_model
+
 
