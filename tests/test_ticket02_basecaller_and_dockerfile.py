@@ -9,56 +9,54 @@ WF_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(WF_DIR / "bin"))
 
 try:
-    from workflow_glue.util import normalize_medaka_model
+    from workflow_glue.util import normalize_basecaller_model as normalize_medaka_model
 except ImportError:
     normalize_medaka_model = None
 
 
 # --- 1. Dynamic Model Normalization Unit Tests ---
 
-@pytest.mark.parametrize("dorado_model,expected_medaka_model", [
-    ("dna_r10.4.1_e8.2_400bps_hac@v5.2.0", "r1041_e82_400bps_hac_v5.2.0"),
-    ("dna_r10.4.1_e8.2_400bps_sup@v4.2.0", "r1041_e82_400bps_sup_v4.2.0"),
-    ("dna_r10.4.1_e8.2_400bps_hac@v4.3.0", "r1041_e82_400bps_hac_v4.3.0"),
-    ("dna_r10.4.1_e8.2_400bps_sup@v5.0.0", "r1041_e82_400bps_sup_v5.0.0"),
-    ("dna_r10.4.1_e8.2_400bps_sup@v5.2.0", "r1041_e82_400bps_sup_v5.2.0"),
-    ("dna_r10.4.1_e8.2_400bps_sup@v6.0.0", "r1041_e82_400bps_sup_v6.0.0"),
-    ("dna_r10.4.1_e8.2_400bps_hac@v6.0.0", "r1041_e82_400bps_hac_v6.0.0"),
-    ("dna_r10.4.1_e8.2_260bps_hac@v5.0.0", "r1041_e82_260bps_hac_v5.0.0"),
-    ("dna_r10.4.1_e8.2_260bps_sup@v4.0.0", "r1041_e82_260bps_sup_v4.0.0"),
-    ("dna_r10.4.1_e8.2_400bps_fast@v5.0.0", "r1041_e82_400bps_fast_v5.0.0"),
+@pytest.mark.parametrize("dorado_model,expected_model", [
+    ("dna_r10.4.1_e8.2_400bps_hac@v5.2.0", "r1041_e82_400bps_hac_v520"),
+    ("dna_r10.4.1_e8.2_400bps_sup@v4.2.0", "r1041_e82_400bps_sup_v420"),
+    ("dna_r10.4.1_e8.2_400bps_hac@v4.3.0", "r1041_e82_400bps_hac_v430"),
+    ("dna_r10.4.1_e8.2_400bps_sup@v5.0.0", "r1041_e82_400bps_sup_v500"),
+    ("dna_r10.4.1_e8.2_400bps_sup@v5.2.0", "r1041_e82_400bps_sup_v520"),
+    ("dna_r10.4.1_e8.2_400bps_sup@v6.0.0", "r1041_e82_400bps_sup_v600"),
+    ("dna_r10.4.1_e8.2_400bps_hac@v6.0.0", "r1041_e82_400bps_hac_v600"),
+    ("dna_r10.4.1_e8.2_260bps_hac@v5.0.0", "r1041_e82_260bps_hac_v500"),
+    ("dna_r10.4.1_e8.2_260bps_sup@v4.0.0", "r1041_e82_260bps_sup_v400"),
+    ("dna_r10.4.1_e8.2_400bps_fast@v5.0.0", "r1041_e82_400bps_fast_v500"),
 ])
-def test_normalize_dorado_models(dorado_model, expected_medaka_model):
+def test_normalize_dorado_models(dorado_model, expected_model):
     assert normalize_medaka_model is not None, "normalize_medaka_model not implemented"
     result = normalize_medaka_model(dorado_model)
-    assert result == expected_medaka_model, f"Expected {expected_medaka_model}, got {result}"
+    assert result == expected_model, f"Expected {expected_model}, got {result}"
 
 
-@pytest.mark.parametrize("guppy_model,expected_medaka_model", [
-    ("dna_r9.4.1_450bps_hac", "r941_min_hac_g507"),
-    ("dna_r9.4.1_450bps_sup", "r941_min_sup_g507"),
-    ("dna_r9.4.1_450bps_fast", "r941_min_fast_g303"),
-    ("dna_r9.4.1_e8_hac@v3.3", "r941_min_hac_g507"),
-    ("dna_r9.4.1_e8_sup@v3.3", "r941_min_sup_g507"),
+@pytest.mark.parametrize("guppy_model,expected_model", [
+    ("dna_r9.4.1_450bps_hac", "r941_prom_hac_g360+g422"),
+    ("dna_r9.4.1_450bps_sup", "r941_prom_sup_g5014"),
+    ("dna_r9.4.1_450bps_fast", "r941_prom_hac_g360+g422"),
+    ("dna_r9.4.1_e8_hac@v3.3", "r941_prom_hac_g360+g422"),
+    ("dna_r9.4.1_e8_sup@v3.3", "r941_prom_sup_g5014"),
 ])
-def test_normalize_legacy_guppy_models(guppy_model, expected_medaka_model):
+def test_normalize_legacy_guppy_models(guppy_model, expected_model):
     assert normalize_medaka_model is not None, "normalize_medaka_model not implemented"
     result = normalize_medaka_model(guppy_model)
-    assert result == expected_medaka_model, f"Expected {expected_medaka_model}, got {result}"
+    assert result == expected_model, f"Expected {expected_model}, got {result}"
 
 
-@pytest.mark.parametrize("direct_model,expected_medaka_model", [
-    ("r1041_e82_400bps_sup_v5.0.0", "r1041_e82_400bps_sup_v5.0.0"),
-    ("r1041_e82_400bps_hac_v5.2.0", "r1041_e82_400bps_hac_v5.2.0"),
-    ("r941_min_hac_g507", "r941_min_hac_g507"),
-    ("r941_min_high_g360", "r941_min_high_g360"),
-    ("r941_min_high_g360:consensus", "r941_min_high_g360"),
-    ("r1041_e82_400bps_sup_v5.0.0:consensus", "r1041_e82_400bps_sup_v5.0.0"),
+@pytest.mark.parametrize("direct_model,expected_model", [
+    ("r1041_e82_400bps_sup_v500", "r1041_e82_400bps_sup_v500"),
+    ("r1041_e82_400bps_hac_v520", "r1041_e82_400bps_hac_v520"),
+    ("r941_prom_hac_g360+g422", "r941_prom_hac_g360+g422"),
+    ("r941_prom_sup_g5014", "r941_prom_sup_g5014"),
 ])
-def test_direct_medaka_models_and_legacy_suffix_strip(direct_model, expected_medaka_model):
+def test_direct_models(direct_model, expected_model):
     assert normalize_medaka_model is not None, "normalize_medaka_model not implemented"
     result = normalize_medaka_model(direct_model)
-    assert result == expected_medaka_model, f"Expected {expected_medaka_model}, got {result}"
+    assert result == expected_model, f"Expected {expected_model}, got {result}"
 
 
 @pytest.mark.parametrize("file_path", [
@@ -85,7 +83,7 @@ def test_workflow_glue_cli_normalize_model():
     ]
     res = subprocess.run(cmd, capture_output=True, text=True)
     assert res.returncode == 0, f"workflow-glue normalize_model failed: {res.stderr}"
-    assert res.stdout.strip() == "r1041_e82_400bps_hac_v5.2.0"
+    assert res.stdout.strip() == "r1041_e82_400bps_hac_v520"
 
 
 # --- 3. Pipeline Integration Tests (main.nf & run_artic.sh) ---

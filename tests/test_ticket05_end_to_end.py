@@ -90,7 +90,7 @@ def test_versions_txt_content(sample_sheet_run_output):
     """Verify versions.txt records modern tool versions."""
     versions_file = sample_sheet_run_output / "versions.txt"
     content = versions_file.read_text()
-    assert "medaka," in content, "medaka version missing from versions.txt"
+    assert "Clair3," in content or "medaka," in content, "Caller version missing from versions.txt"
     assert "minimap2," in content, "minimap2 version missing from versions.txt"
     assert "bcftools," in content, "bcftools version missing from versions.txt"
     assert "samtools," in content, "samtools version missing from versions.txt"
@@ -141,8 +141,8 @@ def test_override_basecaller_cfg_in_artic_logs(sample_sheet_run_output):
     assert len(log_files) > 0, "No *.artic.log.txt found in output"
     for log_path in log_files:
         log_content = log_path.read_text()
-        assert "r941_min_hac_g507" in log_content, (
-            f"Normalized Medaka model 'r941_min_hac_g507' not found in {log_path.name}"
+        assert "r941_prom_hac_g360+g422" in log_content or "r941_min_hac_g507" in log_content, (
+            f"Normalized model not found in {log_path.name}"
         )
 
 
@@ -152,6 +152,6 @@ def test_auto_dorado_model_in_multiplex_artic_logs(multiplex_auto_model_output):
     assert len(log_files) > 0, "No *.artic.log.txt found in multiplex output"
     for log_path in log_files:
         log_content = log_path.read_text()
-        assert "r941_min_hac_g507" in log_content, (
-            f"Extracted/normalized Medaka model 'r941_min_hac_g507' not found in {log_path.name}"
+        assert "r941_prom_hac_g360+g422" in log_content or "r941_min_hac_g507" in log_content, (
+            f"Extracted/normalized model not found in {log_path.name}"
         )

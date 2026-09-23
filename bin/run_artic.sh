@@ -151,33 +151,64 @@ if [[ -f "${sample_name}.primertrimmed.rg.sorted.bam" ]]; then
     cp -L "${sample_name}.primertrimmed.rg.sorted.bam.bai" "${sample_name}.trimmed.rg.sorted.bam.bai" || ln -sf "${sample_name}.primertrimmed.rg.sorted.bam.bai" "${sample_name}.trimmed.rg.sorted.bam.bai"
 fi
 
-# Calculate strand depth stats across primer pools
+# Calculate strand depth stats across primer pools on 20bp stepped grid
 python3 -c "
 import pysam, os
 
 bam_path = '${sample_name}.primertrimmed.rg.sorted.bam'
+ref_path = '${ref_file}'
 sample = '${sample_name}'
+
+ref_dict = {}
+if os.path.exists(bam_path) and os.path.getsize(bam_path) > 0:
+    try:
+        samfile = pysam.AlignmentFile(bam_path, 'rb')
+        ref_dict = dict(zip(samfile.references, samfile.lengths))
+    except Exception:
+        ref_dict = {}
+
+if not ref_dict and os.path.exists(ref_path):
+    try:
+        with pysam.FastxFile(ref_path) as fa:
+            for entry in fa:
+                ref_dict[entry.name] = len(entry.sequence)
+    except Exception:
+        pass
 
 with open(f'{sample}.depth.txt', 'w') as out_f:
     out_f.write('ref\tpos\tdepth\tdepth_fwd\tdepth_rev\tsample_name\tprimer_set\n')
-    if os.path.exists(bam_path):
-        samfile = pysam.AlignmentFile(bam_path, 'rb')
-        for pset in ['1', '2']:
-            for col in samfile.pileup(stepper='nofilter', min_base_quality=0, max_depth=100000):
-                rname = col.reference_name
-                pos = col.reference_pos + 1
-                fwd = rev = 0
-                for read in col.pileups:
-                    al = read.alignment
-                    if al.is_unmapped or al.is_secondary or al.is_supplementary:
-                        continue
-                    rg = al.get_tag('RG') if al.has_tag('RG') else None
-                    if str(rg) == pset:
-                        if al.is_reverse:
-                            rev += 1
-                        else:
-                            fwd += 1
+    for rname, rlen in ref_dict.items():
+        grid_points = range(0, rlen, 20)
+        grid_set = set(grid_points)
+        counts = {1: {p: [0, 0] for p in grid_points}, 2: {p: [0, 0] for p in grid_points}}
+
+        if os.path.exists(bam_path) and os.path.getsize(bam_path) > 0:
+            try:
+                samfile = pysam.AlignmentFile(bam_path, 'rb')
+                for col in samfile.pileup(rname, stepper='nofilter', min_base_quality=0, max_depth=100000):
+                    pos = col.reference_pos
+                    if pos in grid_set:
+                        for read in col.pileups:
+                            al = read.alignment
+                            if al.is_unmapped or al.is_secondary or al.is_supplementary:
+                                continue
+                            rg = al.get_tag('RG') if al.has_tag('RG') else None
+                            try:
+                                pset = int(rg)
+                            except (ValueError, TypeError):
+                                continue
+                            if pset in counts:
+                                if al.is_reverse:
+                                    counts[pset][pos][1] += 1
+                                else:
+                                    counts[pset][pos][0] += 1
+            except Exception:
+                pass
+
+        for pset in [1, 2]:
+            for pos in grid_points:
+                fwd, rev = counts[pset][pos]
                 tot = fwd + rev
-                if tot > 0:
-                    out_f.write(f'{rname}\t{pos}\t{tot}\t{fwd}\t{rev}\t{sample}\t{pset}\n')
+                out_f.write(f'{rname}\t{pos}\t{tot}\t{fwd}\t{rev}\t{sample}\t{pset}\n')
 "
+

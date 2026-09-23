@@ -2,6 +2,7 @@
 """Create report file."""
 
 import json
+from pathlib import Path
 
 from aplanat import bars, lines, report
 from aplanat.components import bcfstats, nextclade
@@ -43,39 +44,86 @@ def read_files(summaries, **kwargs):
 
 def output_json(df, consensus_fasta, readcounts):
     """Read depth stats df and create JSON output."""
-    grouped_by_sample = df.groupby('sample_name')
     all_json = {}
-    for sample in grouped_by_sample.groups.keys():
-        group_by_primer = grouped_by_sample.get_group(
-            sample).groupby('primer_set')
-        rg1 = group_by_primer.get_group(1).reset_index()
-        rg2 = group_by_primer.get_group(2).reset_index()
-        newdf = pd.DataFrame()
-        newdf['start'] = rg1['pos'] - 10
-        newdf['start'] = newdf['start'].clip(lower=0).astype(int)
-        newdf['end'] = rg1['pos'] + 10
-        newdf['end'] = newdf['end'].astype(int)
-        newdf['fwd'] = rg1['depth_fwd'] + rg2['depth_fwd']
-        newdf['rev'] = rg1['depth_rev'] + rg2['depth_rev']
-        newdf['rg1'] = rg1['depth']
-        newdf['rg2'] = rg2['depth']
-        # preserve data type by converting column by column
-        final = list(list(x) for x in zip(*(
-            newdf[x].values.tolist() for x in newdf.columns)))
-        all_json[sample] = final
+    if df is not None and not df.empty and 'sample_name' in df.columns:
+        grouped_by_sample = df.groupby('sample_name')
+        for sample in grouped_by_sample.groups.keys():
+            sample_df = grouped_by_sample.get_group(sample)
+            if 'primer_set' not in sample_df.columns:
+                group_by_primer = {1: sample_df}
+            else:
+                group_by_primer = sample_df.groupby('primer_set')
+
+            # Safely fetch pool 1
+            if hasattr(group_by_primer, 'groups'):
+                if 1 in group_by_primer.groups:
+                    rg1 = group_by_primer.get_group(1).reset_index(drop=True)
+                elif '1' in group_by_primer.groups:
+                    rg1 = group_by_primer.get_group('1').reset_index(drop=True)
+                else:
+                    rg1 = pd.DataFrame(columns=['pos', 'depth', 'depth_fwd', 'depth_rev'])
+            else:
+                rg1 = pd.DataFrame(columns=['pos', 'depth', 'depth_fwd', 'depth_rev'])
+
+            # Safely fetch pool 2
+            if hasattr(group_by_primer, 'groups'):
+                if 2 in group_by_primer.groups:
+                    rg2 = group_by_primer.get_group(2).reset_index(drop=True)
+                elif '2' in group_by_primer.groups:
+                    rg2 = group_by_primer.get_group('2').reset_index(drop=True)
+                else:
+                    rg2 = pd.DataFrame(columns=['pos', 'depth', 'depth_fwd', 'depth_rev'])
+            else:
+                rg2 = pd.DataFrame(columns=['pos', 'depth', 'depth_fwd', 'depth_rev'])
+
+            req_cols = ['pos', 'depth', 'depth_fwd', 'depth_rev']
+            rg1 = rg1[[c for c in req_cols if c in rg1.columns]].copy()
+            for c in req_cols:
+                if c not in rg1.columns:
+                    rg1[c] = 0
+
+            rg2 = rg2[[c for c in req_cols if c in rg2.columns]].copy()
+            for c in req_cols:
+                if c not in rg2.columns:
+                    rg2[c] = 0
+
+            if rg1.empty and rg2.empty:
+                all_json[sample] = []
+                continue
+
+            merged = pd.merge(rg1, rg2, on='pos', how='outer', suffixes=('_1', '_2')).fillna(0).sort_values('pos')
+            if merged.empty:
+                all_json[sample] = []
+                continue
+
+            newdf = pd.DataFrame()
+            newdf['start'] = (merged['pos'] - 10).clip(lower=0).astype(int)
+            newdf['end'] = (merged['pos'] + 10).astype(int)
+            newdf['fwd'] = (merged['depth_fwd_1'] + merged['depth_fwd_2']).astype(int)
+            newdf['rev'] = (merged['depth_rev_1'] + merged['depth_rev_2']).astype(int)
+            newdf['rg1'] = merged['depth_1'].astype(int)
+            newdf['rg2'] = merged['depth_2'].astype(int)
+            # preserve data type by converting column by column
+            final = list(list(x) for x in zip(*(
+                newdf[x].values.tolist() for x in newdf.columns)))
+            all_json[sample] = final
+
     final_json = {'data': []}
     # parse the consensus fasta to get extra info required
-    with pysam.FastxFile(consensus_fasta) as fh:
-        for entry in fh:
-            all_json[entry.name][-1][1] = len(entry.sequence)
-            final_json['data'].append({
-                'barcode': entry.name,
-                'chromosome': entry.comment,
-                'seqlen': len(entry.sequence),
-                'ncount': (entry.sequence).count('N'),
-                'readcount': readcounts[entry.name],
-                'coverage': all_json[entry.name]
-            })
+    if consensus_fasta and Path(consensus_fasta).exists():
+        with pysam.FastxFile(consensus_fasta) as fh:
+            for entry in fh:
+                cov = all_json.get(entry.name, [])
+                if cov:
+                    cov[-1][1] = len(entry.sequence)
+                final_json['data'].append({
+                    'barcode': entry.name,
+                    'chromosome': entry.comment,
+                    'seqlen': len(entry.sequence),
+                    'ncount': (entry.sequence).count('N'),
+                    'readcount': readcounts.get(entry.name, 0),
+                    'coverage': cov
+                })
     return final_json
 
 
@@ -259,7 +307,7 @@ comparing depth across samples.***
             plots_orient.append(p)
 
             # primer set plot
-            pset = df['primer_set']
+            pset = pd.to_numeric(df['primer_set'], errors='coerce')
             xs = [df.loc[(pset == i) & bc]['pos'] for i in (1, 2)]
             ys = [df.loc[(pset == i) & bc]['depth'] for i in (1, 2)]
             names = ['pool-1', 'pool-2']
